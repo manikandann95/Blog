@@ -1,4 +1,4 @@
-﻿/* ==========================================================
+/* ==========================================================
    MY PERSONAL BLOG — app.js
    Auth: Supabase + GitHub OAuth
    Storage: Supabase PostgreSQL (per-user, Row Level Security)
@@ -276,7 +276,73 @@ async function importLocalNotes() {
   render();
 }
 
-/* ── marked.js ─────────────────────────────────────────── */
+/* ── Import from JSON file (exported backup) ───────────── */
+async function importFromJsonFile(file) {
+  if (!file) return;
+
+  /* Read the file */
+  let parsed;
+  try {
+    const text = await file.text();
+    parsed = JSON.parse(text);
+  } catch(e) {
+    alert('❌ Could not read the file. Make sure you select a JSON file exported from this blog.');
+    return;
+  }
+
+  /* Validate structure — must be { moduleId: [notes] } */
+  const validModuleIds = MODULES.map(m => m.id);
+  const hasValidKeys   = Object.keys(parsed).some(k => validModuleIds.includes(k));
+  if (!hasValidKeys) {
+    alert('❌ This file does not look like a valid blog export. Please export from ⬇ Export button first.');
+    return;
+  }
+
+  showLoading('Uploading your notes to Supabase…');
+
+  let imported = 0, skipped = 0, failed = 0;
+
+  for (const m of MODULES) {
+    const notes = parsed[m.id] || [];
+    for (const note of notes) {
+      /* Skip if note is missing required fields */
+      if (!note.id || !note.createdAt) { failed++; continue; }
+
+      /* Skip if already in cloud */
+      const alreadyInCloud = (state.notes[m.id] || []).some(n => n.id === note.id);
+      if (alreadyInCloud) { skipped++; continue; }
+
+      try {
+        const safeNote = {
+          id:        note.id,
+          title:     note.title     || '',
+          content:   note.content   || '',
+          createdAt: note.createdAt,
+          updatedAt: note.updatedAt || note.createdAt,
+        };
+        await dbInsertNote(m.id, safeNote);
+        state.notes[m.id].unshift(safeNote);
+        imported++;
+      } catch(e) {
+        console.error('Insert failed for note', note.id, e);
+        failed++;
+      }
+    }
+  }
+
+  hideLoading();
+
+  const msg = [
+    `✅ ${imported} note${imported !== 1 ? 's' : ''} uploaded to Supabase.`,
+    skipped > 0 ? `⏭️ ${skipped} already existed (skipped).` : '',
+    failed  > 0 ? `❌ ${failed} could not be imported.` : '',
+  ].filter(Boolean).join('\n');
+
+  alert(msg);
+  render();
+}
+
+
 function configureMarked() {
   if (typeof marked === 'undefined') return;
   marked.setOptions({ breaks: true, gfm: true });
@@ -313,6 +379,16 @@ function bindEvents() {
   document.getElementById('themeToggle').addEventListener('click', toggleTheme);
   /* Export */
   document.getElementById('exportBtn').addEventListener('click', exportNotes);
+  /* Import from JSON file */
+  document.getElementById('importJsonBtn').addEventListener('click', () => {
+    document.getElementById('importJsonInput').click();
+  });
+  document.getElementById('importJsonInput').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) importFromJsonFile(file);
+    e.target.value = ''; /* reset so same file can be re-selected */
+  });
+
   /* Search */
   const si = document.getElementById('searchInput');
   si.addEventListener('input', () => {
