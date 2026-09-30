@@ -1,0 +1,181 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Personal Blog</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ═══ LOADING OVERLAY ═══════════════════════════════ -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p id="loadingMsg" class="loading-msg">Loading your blog…</p>
+  </div>
+
+  <!-- ═══ LOGIN SCREEN ══════════════════════════════════ -->
+  <div id="loginScreen" class="login-screen hidden">
+    <div class="login-card">
+      <div class="login-icon">📓</div>
+      <h1 class="login-title">My Personal Blog</h1>
+      <p class="login-subtitle">Your private space to think, learn, and grow.<br/>Sign in to access your notes.</p>
+      <button id="githubLoginBtn" class="btn-github">
+        <svg class="github-icon" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+            0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13
+            -.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66
+            .07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15
+            -.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0
+            1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82
+            1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01
+            1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/>
+        </svg>
+        Sign in with GitHub
+      </button>
+      <p class="login-note">🔒 Your notes are private — only you can see them.</p>
+    </div>
+  </div>
+
+  <!-- ═══ MAIN APP (hidden until logged in) ════════════ -->
+  <div id="mainApp" class="hidden">
+
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="header-logo">
+        <span class="logo-icon">📓</span>
+        <span class="logo-text">My Notes</span>
+      </div>
+      <div class="header-search">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" class="search-input"
+            placeholder="Search by text or date (e.g. 29 Sep 2026)…" autocomplete="off" />
+          <button id="clearSearchBtn" class="clear-btn hidden" title="Clear search">✕</button>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="themeToggle" class="icon-btn" title="Toggle Dark/Light mode">🌙</button>
+        <button id="exportBtn" class="icon-btn" title="Export all notes as JSON">⬇ Export</button>
+        <div class="user-info">
+          <img id="userAvatar" class="user-avatar" src="" alt="User avatar" />
+          <span id="userName" class="user-name"></span>
+          <button id="signOutBtn" class="icon-btn sign-out-btn" title="Sign out">Sign Out</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- NAV TABS -->
+    <nav class="module-nav">
+      <button class="nav-tab active" data-module="daytoday">🗓 Day to Day</button>
+      <button class="nav-tab" data-module="tamil-culture">🎭 Tamil Culture</button>
+      <button class="nav-tab" data-module="spirituality">🕉 Spirituality</button>
+      <button class="nav-tab" data-module="manifestation">✨ Manifestation</button>
+      <button class="nav-tab" data-module="md104">💻 MD-104</button>
+    </nav>
+
+    <!-- IMPORT BANNER (shown once on first login if localStorage notes exist) -->
+    <div id="importBanner" class="import-banner hidden">
+      <span>📦 You have notes saved locally from before.</span>
+      <button id="importLocalBtn" class="import-btn">Import to Cloud</button>
+      <button id="dismissImportBtn" class="import-dismiss">Dismiss</button>
+    </div>
+
+    <!-- BODY -->
+    <div class="app-body">
+
+      <!-- Sidebar for Day to Day -->
+      <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">📅 Entries by Date</div>
+        <div id="dateList" class="date-list">
+          <p class="sidebar-empty">No entries yet.</p>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <main class="main-content">
+
+        <!-- Search Results -->
+        <section id="searchResults" class="search-results hidden">
+          <div class="section-header">
+            <h2 class="section-title">🔍 Search Results</h2>
+            <span id="searchResultCount" class="result-count"></span>
+          </div>
+          <div id="searchResultsList" class="notes-grid"></div>
+          <div id="searchEmpty" class="empty-state hidden">
+            <span>😔</span>
+            <p>No results found. Try different keywords or a date like "29 Sep".</p>
+          </div>
+        </section>
+
+        <!-- Module View -->
+        <section id="moduleView">
+          <div class="section-header">
+            <h2 id="moduleTitle" class="section-title"></h2>
+            <button id="newNoteBtn" class="btn-primary">＋ New Entry</button>
+          </div>
+          <div id="notesList" class="notes-grid"></div>
+          <div id="emptyState" class="empty-state hidden">
+            <span>✍️</span>
+            <p>Nothing here yet. Click <strong>+ New Entry</strong> to start writing!</p>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+  </div><!-- end #mainApp -->
+
+  <!-- EDITOR MODAL -->
+  <div id="noteModal" class="modal hidden">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 id="modalHeading">New Entry</h3>
+        <button id="closeModalBtn" class="icon-btn close-btn" title="Close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="text" id="noteTitle" class="note-title-field" placeholder="Title (optional)" maxlength="120" />
+        <div class="prompts-section">
+          <button id="promptsToggle" class="prompts-toggle" type="button">
+            💡 Need inspiration? Click for writing prompts
+          </button>
+          <div id="promptsPanel" class="prompts-panel hidden">
+            <p class="prompts-label">Choose a prompt to start writing — click any to insert:</p>
+            <div id="promptsList" class="prompts-list"></div>
+          </div>
+        </div>
+        <textarea id="noteContent" placeholder="Write your thoughts here in Markdown…"></textarea>
+      </div>
+      <div class="modal-footer">
+        <span class="md-hint">Supports <strong>Markdown</strong> — **bold**, *italic*, # Heading, - list</span>
+        <div class="modal-actions">
+          <button id="cancelNoteBtn" class="btn-secondary">Cancel</button>
+          <button id="saveNoteBtn" class="btn-primary">💾 Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM DELETE DIALOG -->
+  <div id="confirmDialog" class="modal hidden">
+    <div class="modal-backdrop" id="confirmBackdrop"></div>
+    <div class="modal-card confirm-card">
+      <h3>🗑 Delete Entry?</h3>
+      <p>This action cannot be undone.</p>
+      <div class="modal-actions">
+        <button id="cancelDeleteBtn" class="btn-secondary">Cancel</button>
+        <button id="confirmDeleteBtn" class="btn-danger">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CDN Libraries -->
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
